@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.next/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Environment — NEVER commit real API keys
+.env
+.env.*
+!.env.example
+frontend/.env.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build / logs
+*.log
+dist/
+build/
+data/
+
+# Docker volumes (local)
+pg_data/
+minio_data/
