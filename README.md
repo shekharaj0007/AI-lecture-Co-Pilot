@@ -9,7 +9,31 @@ cd lecture-copilot
 .\scripts\setup.ps1      # install deps (first time)
 .\scripts\start.ps1      # opens backend + frontend
 ```
+# 📸 Application Screenshots
 
+## 📊 Dashboard
+
+![Dashboard](assets/DASHBOARD.png)
+
+---
+
+## 🎓 Create Courses
+
+![Create Courses](assets/Create%20Courses.png)
+
+---
+
+## 🤖 AI Lecture Copilot Features
+
+![Lecture Copilot Features](assets/Lecture%20Copilot%20FEATURES.png)
+
+---
+
+## 📈 Learning Analytics
+
+![Analytics](assets/Analytics.png)
+
+---
 Open **http://localhost:3000**
 
 ### Prerequisites
