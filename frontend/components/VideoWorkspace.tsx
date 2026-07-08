@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getNotes, getVideo, processingEventsUrl, type NoteEntry, type Video } from "@/lib/api";
+import { getNotes, getVideo, processingEventsUrl, regenerateAiOutputs, type NoteEntry, type Video } from "@/lib/api";
 import { ChatPanel } from "@/components/ChatPanel";
 import { FlashcardsPanel } from "@/components/FlashcardsPanel";
 import { TranscriptPanel } from "@/components/TranscriptPanel";
@@ -24,7 +24,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8010";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8011";
 
 type Tab = "chat" | "transcript" | "notes" | "flashcards" | "quiz" | "annotations" | "slides";
 
@@ -130,7 +130,7 @@ export function VideoWorkspace({ video: initialVideo }: { video: Video }) {
           </div>
         </div>
 
-        <div className="flex h-[520px] flex-col lg:col-span-2">
+        <div className="flex min-h-[560px] flex-col lg:col-span-2 lg:max-h-[calc(100vh-8rem)]">
           <div className="flex shrink-0 overflow-x-auto rounded-t-2xl border border-b-0 border-surface-border bg-white p-1">
             {tabs.map(({ id, label, icon: Icon }) => (
               <button
@@ -147,28 +147,33 @@ export function VideoWorkspace({ video: initialVideo }: { video: Video }) {
               </button>
             ))}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col rounded-b-2xl rounded-tr-2xl bg-white p-4 shadow-card ring-1 ring-surface-border sm:p-5">
-            {tab === "chat" && (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-2xl rounded-tr-2xl bg-white p-4 shadow-card ring-1 ring-surface-border sm:p-5">
+            <div className={tab === "chat" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
               <ChatPanel videoId={video.id} ready={video.status === "ready"} />
-            )}
-            {tab === "transcript" && (
+            </div>
+            <div className={tab === "transcript" ? "min-h-0 flex-1 overflow-y-auto" : "hidden"}>
               <TranscriptPanel videoId={video.id} ready={video.status === "ready"} />
-            )}
-            {tab === "notes" && (
-              <NotesContent notes={notes} ready={video.status === "ready"} />
-            )}
-            {tab === "flashcards" && (
+            </div>
+            <div className={tab === "notes" ? "min-h-0 flex-1 overflow-y-auto" : "hidden"}>
+              <NotesContent
+                videoId={video.id}
+                notes={notes}
+                ready={video.status === "ready"}
+                onNotesUpdated={setNotes}
+              />
+            </div>
+            <div className={tab === "flashcards" ? "min-h-0 flex-1 overflow-y-auto" : "hidden"}>
               <FlashcardsPanel videoId={video.id} ready={video.status === "ready"} />
-            )}
-            {tab === "quiz" && (
+            </div>
+            <div className={tab === "quiz" ? "min-h-0 flex-1 overflow-y-auto" : "hidden"}>
               <QuizPanel videoId={video.id} ready={video.status === "ready"} />
-            )}
-            {tab === "annotations" && (
+            </div>
+            <div className={tab === "annotations" ? "min-h-0 flex-1 overflow-y-auto" : "hidden"}>
               <AnnotationsPanel videoId={video.id} ready={video.status === "ready"} />
-            )}
-            {tab === "slides" && (
+            </div>
+            <div className={tab === "slides" ? "min-h-0 flex-1 overflow-y-auto" : "hidden"}>
               <SlidesPanel videoId={video.id} ready={video.status === "ready"} />
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -176,7 +181,39 @@ export function VideoWorkspace({ video: initialVideo }: { video: Video }) {
   );
 }
 
-function NotesContent({ notes, ready }: { notes: NoteEntry[]; ready: boolean }) {
+function NotesContent({
+  videoId,
+  notes,
+  ready,
+  onNotesUpdated,
+}: {
+  videoId: string;
+  notes: NoteEntry[];
+  ready: boolean;
+  onNotesUpdated: (notes: NoteEntry[]) => void;
+}) {
+  const [regenerating, setRegenerating] = useState(false);
+  const needsRegenerate = notes.some((n) =>
+    n.content_markdown.includes("ANTHROPIC_API_KEY")
+  );
+
+  async function handleRegenerate() {
+    setRegenerating(true);
+    try {
+      await regenerateAiOutputs(videoId);
+      for (let i = 0; i < 20; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const updated = await getNotes(videoId);
+        if (!updated.some((n) => n.content_markdown.includes("ANTHROPIC_API_KEY"))) {
+          onNotesUpdated(updated);
+          break;
+        }
+      }
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
   if (!ready) {
     return <p className="py-8 text-center text-sm text-slate-500">Notes generate after processing.</p>;
   }
@@ -184,7 +221,22 @@ function NotesContent({ notes, ready }: { notes: NoteEntry[]; ready: boolean }) 
     return <p className="py-8 text-center text-sm text-slate-500">No notes generated yet.</p>;
   }
   return (
-    <div className="max-h-[480px] space-y-6 overflow-y-auto">
+    <div>
+      {needsRegenerate && (
+        <div className="mb-4 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
+          <p className="text-xs text-amber-800">
+            Notes were created before your API key was added.
+          </p>
+          <button
+            onClick={handleRegenerate}
+            disabled={regenerating}
+            className="mt-2 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          >
+            {regenerating ? "Regenerating…" : "Regenerate with AI"}
+          </button>
+        </div>
+      )}
+      <div className="max-h-[480px] space-y-6 overflow-y-auto">
       {notes.map((note) => (
         <article key={`${note.chapter_title}-${note.start_seconds}`}>
           <h3 className="font-semibold text-brand-700">{note.chapter_title}</h3>
@@ -193,6 +245,7 @@ function NotesContent({ notes, ready }: { notes: NoteEntry[]; ready: boolean }) 
           </div>
         </article>
       ))}
+      </div>
     </div>
   );
 }

@@ -120,7 +120,7 @@ export function ImportSection() {
                       onChange={(e) => setUrl(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleYoutubeImport()}
                       placeholder="https://www.youtube.com/watch?v=..."
-                      className="w-full rounded-xl border border-surface-border bg-surface-muted py-3 pl-10 pr-4 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                      className="w-full rounded-xl border border-surface-border bg-white py-3 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                     />
                   </div>
                   <button

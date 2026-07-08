@@ -32,7 +32,7 @@ export default function HomePage() {
             transcripts, and flashcards — powered by Whisper, OCR, and RAG.
           </p>
         </div>
-        <div className="mx-auto mt-10 max-w-3xl">
+        <div className="mx-auto mt-10 max-w-3xl text-slate-900">
           <ImportSection />
         </div>
       </section>

@@ -361,3 +361,40 @@ def _generate_quiz(video_id: str, chunks: list[dict]) -> None:
                 )
             )
         db.commit()
+
+
+def regenerate_ai_outputs(video_id: str) -> None:
+    """Re-run notes, flashcards, and quiz generation (e.g. after adding API keys)."""
+    with SyncSessionLocal() as db:
+        result = db.execute(
+            select(TimelineChunk)
+            .where(TimelineChunk.video_id == video_id)
+            .order_by(TimelineChunk.start_seconds)
+        )
+        rows = list(result.scalars().all())
+    if not rows:
+        return
+    chunks = [
+        {
+            "start_seconds": c.start_seconds,
+            "end_seconds": c.end_seconds,
+            "speaker": c.speaker,
+            "transcript_text": c.transcript_text,
+            "ocr_text": c.ocr_text or "",
+            "chapter_title": c.chapter_title,
+            "visual_summary": c.visual_summary or "",
+        }
+        for c in rows
+    ]
+    _generate_notes(video_id, chunks)
+    _generate_flashcards(video_id, chunks)
+    try:
+        _generate_quiz(video_id, chunks)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Quiz regeneration failed for %s", video_id)
+
+
+@celery_app.task(name="app.workers.pipeline.regenerate_ai_outputs")
+def regenerate_ai_outputs_task(video_id: str):
+    regenerate_ai_outputs(video_id)

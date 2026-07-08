@@ -11,7 +11,11 @@ from app.services.embeddings import embed_text
 from app.services.hybrid_search import hybrid_rank
 from app.services.translate import translate_text
 
-client = Anthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
+
+def _anthropic_client() -> Anthropic | None:
+    if not settings.anthropic_api_key:
+        return None
+    return Anthropic(api_key=settings.anthropic_api_key)
 
 
 async def _retrieve_chunks(db: AsyncSession, video_id: str, query_embedding: list[float], query_text: str, limit: int = 6):
@@ -45,6 +49,7 @@ def _build_response(chunks: list[TimelineChunk], question: str, target_language:
         for c in chunks
     )
 
+    client = _anthropic_client()
     if not client:
         answer = f"Add ANTHROPIC_API_KEY for AI answers. Retrieved {len(chunks)} relevant segment(s)."
     else:

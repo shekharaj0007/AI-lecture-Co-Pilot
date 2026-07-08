@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8010";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8011";
 
 function getToken() {
   if (typeof window === "undefined") return null;
@@ -250,6 +250,14 @@ export async function getAnalytics(ownerId: string): Promise<Analytics> {
 export function exportUrl(videoId: string, format: "srt" | "md" | "anki") {
   const paths = { srt: "transcript.srt", md: "notes.md", anki: "anki.csv" };
   return `${API_URL}/export/${videoId}/${paths[format]}`;
+}
+
+export async function regenerateAiOutputs(videoId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/videos/${videoId}/regenerate-ai`, {
+    method: "POST",
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error("Regeneration failed");
 }
 
 export function processingEventsUrl(videoId: string) {

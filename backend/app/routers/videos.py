@@ -89,3 +89,15 @@ async def stream_video(video_id: str, db: AsyncSession = Depends(get_db)):
 
     body, media_type = open_stream(video.s3_key)
     return StreamingResponse(body, media_type=media_type, headers={"Accept-Ranges": "bytes"})
+
+
+@router.post("/{video_id}/regenerate-ai")
+async def regenerate_ai(video_id: str, db: AsyncSession = Depends(get_db)):
+    """Regenerate notes, flashcards, and quiz using current API keys."""
+    video = await db.get(Video, video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    if video.status != "ready":
+        raise HTTPException(status_code=409, detail="Video must be ready before regenerating")
+    enqueue_task("app.workers.pipeline.regenerate_ai_outputs", [video_id])
+    return {"ok": True, "message": "Regenerating notes, flashcards, and quiz…"}
