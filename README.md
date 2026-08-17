@@ -1,5 +1,5 @@
 # Lecture Copilot
-
+Live Deployment at  https://lecture-copilot-api.onrender.com/
 Upload a lecture video → get timestamp-cited Q&A, auto notes, flashcards, quizzes, and more.
 
 ## Quick start (Windows, no Docker)
